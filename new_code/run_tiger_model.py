@@ -521,6 +521,12 @@ def build_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument("--num_inference_steps", type=int, default=20)
     parser.add_argument("--guidance_scale", type=float, default=0.02)
     parser.add_argument("--tiger_dtype", type=str, choices=["float16", "float32"], default="float16")
+    parser.add_argument(
+        "--cap_majority_ratio",
+        type=float,
+        default=0.0,
+        help="若大于 0，则不使用 Tiger 生成，并将训练集中多数类数量限制为最少类的该倍数",
+    )
 
     return parser
 
@@ -586,22 +592,60 @@ def main() -> None:
         stats["test_accepted"] = test_stats["accepted"]
 
     tiger_report: Dict[str, object] = {}
-    if args.ptc_generate_per_image > 0 or args.ftc_generate_per_image > 0:
-        generated_samples, tiger_report = augment_train_with_tiger(
-            train_samples=splits["train"],
-            output_root=output_root,
-            pretrain_model_path=args.pretrain_model_path,
-            controlnet_bg_path=args.controlnet_bg_path,
-            class_multipliers={
-                "PTC": args.ptc_generate_per_image,
-                "FTC": args.ftc_generate_per_image,
-            },
-            num_inference_steps=args.num_inference_steps,
-            guidance_scale=args.guidance_scale,
-            dtype=args.tiger_dtype,
-            seed=args.seed,
-        )
-        splits["train"].extend(generated_samples)
+
+    # 如果设置了多数类上限比例，则先对训练集下采样并跳过 Tiger 增强
+    if args.cap_majority_ratio > 0:
+        from collections import defaultdict
+
+        counts: Dict[int, int] = {}
+        for s in splits["train"]:
+            counts[s.label] = counts.get(s.label, 0) + 1
+
+        if counts:
+            min_count = min(counts.values())
+            cap = max(1, int(min_count * args.cap_majority_ratio))
+            rng = random.Random(args.seed)
+
+            label_to_samples: Dict[int, List[Sample]] = defaultdict(list)
+            for s in splits["train"]:
+                label_to_samples[s.label].append(s)
+
+            new_train: List[Sample] = []
+            counts_after: Dict[int, int] = {}
+            for label, lst in label_to_samples.items():
+                if len(lst) > cap:
+                    rng.shuffle(lst)
+                    kept = lst[:cap]
+                else:
+                    kept = lst
+                new_train.extend(kept)
+                counts_after[label] = len(kept)
+
+            tiger_report = {
+                "cap_majority_applied": True,
+                "cap_majority_ratio": args.cap_majority_ratio,
+                "cap_per_label": cap,
+                "counts_before": str(counts),
+                "counts_after": str(counts_after),
+            }
+            splits["train"] = new_train
+    else:
+        if args.ptc_generate_per_image > 0 or args.ftc_generate_per_image > 0:
+            generated_samples, tiger_report = augment_train_with_tiger(
+                train_samples=splits["train"],
+                output_root=output_root,
+                pretrain_model_path=args.pretrain_model_path,
+                controlnet_bg_path=args.controlnet_bg_path,
+                class_multipliers={
+                    "PTC": args.ptc_generate_per_image,
+                    "FTC": args.ftc_generate_per_image,
+                },
+                num_inference_steps=args.num_inference_steps,
+                guidance_scale=args.guidance_scale,
+                dtype=args.tiger_dtype,
+                seed=args.seed,
+            )
+            splits["train"].extend(generated_samples)
 
     output_root.mkdir(parents=True, exist_ok=True)
     reset_output_dirs(resnet_root, include_test="test" in splits)

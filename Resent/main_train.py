@@ -8,7 +8,6 @@ import copy
 import sys
 import pandas as pd
 import matplotlib.pyplot as plt
-import numpy as np
 from sklearn.metrics import roc_auc_score
 from scripts.model import train_model
 import scripts.dataset as DATA
@@ -106,25 +105,11 @@ def main(args):
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    train_labels = transformed_datasets['train'].df["label"].astype(int).to_numpy()
-    class_counts = np.bincount(train_labels, minlength=args.Class)
-    total_samples = class_counts.sum()
-    class_weights = np.ones(args.Class, dtype=np.float32)
-    nonzero_mask = class_counts > 0
-    class_weights[nonzero_mask] = total_samples / (args.Class * class_counts[nonzero_mask])
-    class_weights_tensor = torch.tensor(class_weights, dtype=torch.float32, device=device)
-
-    with open(log_file, 'a', encoding='utf-8') as f:
-        f.write(f"训练集类别计数: {class_counts.tolist()}\n")
-        f.write(f"训练集类别权重: {class_weights.tolist()}\n\n")
-    print(f"训练集类别计数: {class_counts.tolist()}")
-    print(f"训练集类别权重: {class_weights.tolist()}")
-
     net = net.to(device)
     optimizer = optim.Adam(filter(lambda p: p.requires_grad, net.parameters()), lr=args.learning_rate, betas=(0.9, 0.99),weight_decay=0.03)
 
 
-    criterion = nn.CrossEntropyLoss(weight=class_weights_tensor)
+    criterion = nn.CrossEntropyLoss()
 
     train_model(net, dataloaders, criterion, optimizer, args.num_epochs, modelname, device, save_dir, log_file)
 
