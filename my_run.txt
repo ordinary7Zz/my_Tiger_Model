@@ -1,0 +1,104 @@
+# =============================================================================
+# Tiger-Model：PTC vs FTC 二分类流水线（自定义工作流备忘）
+# =============================================================================
+#
+# 整体流程（按顺序执行）：
+#   1) 数据准备    — 从 Excel/原始数据整理出两个亚型目录，并划定「仅真实图」测试集 CSV
+#   2) 生成与混合 — run_tiger_model.py 用扩散模型生成图，划分 train/valid/test，写入 ResNet 用数据与 CSV
+#   3) ResNet 训练 — main_train.py 读取上一步 CSV，训练二分类
+#   4) 模型评估    — test_model.py 在保留测试集上算指标，可选 Youden 阈值
+#   5) 外推/Agent  — prepare_agent_dataset 等多数据集预测（可选，脚本可能在本仓库外）
+#
+# 运行前请自行：
+#   - 安装 Python 环境、PyTorch 与 requirements（见 README / requirements_core.txt）
+#   - 将下面 /mnt/... 等路径改成本机路径；Windows 可用 d:\workspace\... 或 WSL
+#   - 准备 Tiger 权重目录（run_tiger_model.py 内 PRETRAIN_MODEL_PATH、CONTROLNET_* 等）
+# =============================================================================
+
+Tiger-Model：
+
+# -----------------------------------------------------------------------------
+# 步骤 1a：从临床 Excel 构建二分类数据集目录（subtype1_processed / subtype2_processed 等）
+# 说明：脚本若不在本仓库根目录，需在对应环境找到 build_subtype_binary_dataset.py
+# -----------------------------------------------------------------------------
+python build_subtype_binary_dataset.py \
+    --excel /mnt/wangbd8/workspace/DataSets/ThyroidAgent/Classifaction_Data/临床分类任务_按图像筛选.xlsx \
+    --sheet Path_subtype \
+    --data_root /mnt/wangbd8/workspace/DataSets/ThyroidAgent/Classifaction_Data \
+    --out_dir /mnt/wangbd8/workspace/ThyroidAgent/Tiger-Model/dataset
+
+# -----------------------------------------------------------------------------
+# 步骤 1b（可选/与 1c 二选一或衔接）：按比例从两亚型中留出部分样本，用于后续「不参与训练」的原始测试集
+# -----------------------------------------------------------------------------
+python create_original_testset.py \
+    --subtype1_dir ./dataset/subtype1_processed \
+    --subtype2_dir ./dataset/subtype2_processed \
+    --subtype1_test_ratio 0.025 \
+    --subtype2_test_ratio 0.25
+
+# -----------------------------------------------------------------------------
+# 步骤 1c：生成「仅原始图」测试集 CSV（供 run_tiger_model 排除泄露 + test_model 评测）
+# -----------------------------------------------------------------------------
+python create_original_testset.py \
+    --subtype1_dir ./dataset/subtype_1_processed_all \
+    --subtype1_name PTC  \
+    --subtype2_dir ./dataset/subtype_2_processed_all \
+    --subtype2_name FTC \
+    --output_csv ./dataset/CSV/PTC_vs_FTC_test_original_only.csv \
+    --image_base_path ./dataset \
+    --subtype1_test_ratio 0.1 \
+    --subtype2_test_ratio 0.1
+
+# -----------------------------------------------------------------------------
+# 步骤 2：Tiger 生成增强图 + 构建 ResNet 用 train/valid/test 与 PTC_vs_FTC_*.csv
+# 说明：在 run_tiger_model.py 源码内改 SUBTYPE1_DIR、SUBTYPE2_DIR、EXCLUDE_TEST_CSV、
+#       生成倍数、模型路径等；可配合 RADIOMICS_FEATURES_CSV（影像组学）若已生成
+# -----------------------------------------------------------------------------
+python run_tiger_model.py
+
+# -----------------------------------------------------------------------------
+# 步骤 3：训练 ResNet 二分类（数据名需与上一步生成的 CSV/子目录一致）
+# -----------------------------------------------------------------------------
+python Resent/main_train.py \
+    --modelname 'Thyroid_PTC_vs_FTC_with_augmentation' \
+    --architecture 'resnet' \
+    --imagepath './dataset' \
+    --train_data 'PTC_vs_FTC_train' \
+    --valid_data 'PTC_vs_FTC_valid' \
+    --test_data 'PTC_vs_FTC_test' \
+    --learning_rate 0.0001 \
+    --batch_size 8 \
+    --num_epochs 100 \
+    --Class 2
+
+python Resent/main_train_multiclass.py \
+  --modelname Thyroid_4class_with_augmentation \
+  --num_classes 4 \
+  --imagepath ./dataset \
+  --train_data Thyroid_4class_train \
+  --valid_data Thyroid_4class_valid \
+  --test_data Thyroid_4class_test \
+  --batch_size 8 \
+  --eval_batch_size 8 \
+  --num_epochs 100 \
+  --learning_rate 0.0001 \
+  --metric_for_best f1_macro
+
+# -----------------------------------------------------------------------------
+# 步骤 4：在保留测试集上评估；--pth_path 改为实际训练输出目录下的 checkpoint
+# -----------------------------------------------------------------------------
+python test_model.py \
+    --pth_path ./modelsaved/train_20260404_212905/epoch_076_Thyroid_PTC_vs_FTC_with_augmentation_V0.893_T0.884.pth \
+    --csv_path ./dataset/new_data_1/CSV/PTC_vs_FTC_test.csv \
+    --valid_csv_path ./dataset/new_data_1/CSV/PTC_vs_FTC_valid.csv \
+    --threshold 0.5
+
+# -----------------------------------------------------------------------------
+# 步骤 5（可选）：对外部多数据集 valid 跑预测，供 Agent 或其它下游使用
+# 说明：prepare_agent_dataset.py、config/config.yaml 可能不在本仓库；test_dirs 按需增减
+# -----------------------------------------------------------------------------
+python prepare_agent_dataset.py \
+    --mode generate_predictions \
+    --config config/config.yaml \
+    --test_dirs /mnt/wangbd8/workspace/DataSets/ThyroidAgent/train_val_test/TN3K/valid /mnt/wangbd8/workspace/DataSets/ThyroidAgent/train_val_test/DDTI/valid /mnt/wangbd8/workspace/DataSets/ThyroidAgent/train_val_test/PKTN/valid /mnt/wangbd8/workspace/DataSets/ThyroidAgent/train_val_test/TN5K/valid /mnt/wangbd8/workspace/DataSets/ThyroidAgent/train_val_test/ThyroidXL/valid /mnt/wangbd8/workspace/DataSets/ThyroidAgent/train_val_test/Cine-Clip/valid \
+    --output_dir data/predictions

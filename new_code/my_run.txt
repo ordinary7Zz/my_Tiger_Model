@@ -1,0 +1,147 @@
+# =============================================================================
+# Tiger-Model：PTC vs FTC 二分类流水线（JSON 版工作流备忘）
+# =============================================================================
+#
+# 整体流程（按顺序执行）：
+#   1) 准备 JSON 标签文件（格式同 train_labels.json）
+#   2) 数据准备（JSON -> ResNet 目录 + CSV）
+#   3) ResNet 训练
+#   4) 模型评估（JSON 测试集 + 可选 JSON 验证集阈值选择）
+#
+# 运行前请自行：
+#   - 安装 Python 环境、PyTorch 与 requirements（见 README / requirements_core.txt）
+#   - 将下面路径改成你本机路径（Windows 或 WSL 均可）
+#   - 确保 JSON 中 filename 是相对于 image_base_path/base_dir 的相对路径
+# =============================================================================
+
+Tiger-Model（JSON 版）：
+
+# -----------------------------------------------------------------------------
+# 步骤 1：准备 JSON 标签文件
+# 要求：JSON 顶层是 list，元素至少包含：
+#   - filename: 图像相对路径（如 2016/xxx/a.jpg）
+#   - FTCPTC:   标签（默认 0/1，-1 表示忽略）
+# 示例文件：
+#   ./new_code/train_labels.json
+#   ./new_code/valid_labels.json
+#   ./new_code/test_labels.json
+# -----------------------------------------------------------------------------
+
+# -----------------------------------------------------------------------------
+# 步骤 2：运行 JSON 版 run_tiger_model（构建 train/valid，可选同时构建 test）
+# 输出目录默认在 ./dataset_json：
+#   - Resnet_training_data/{train,valid,test}/{0,1}
+#   - CSV/PTC_vs_FTC_{train,valid,test}.csv
+#
+# 说明：
+#   - train/valid 仍由 train_labels.json 切分得到
+#   - 传入 --test_json_path 后，会额外生成独立 test 集，供 main_train 的 --test_data 使用
+#   - 最终测试仍可继续使用独立的 ./new_code/test_labels.json 走 test_model.py
+#
+# 参数说明：
+#   --base_dir      图像根目录，真实路径 = base_dir + filename
+#   --label_key     默认 FTCPTC
+#   --ignore_labels 默认 -1
+#   --label_map     默认 0:PTC:0,1:FTC:1
+#   --ptc_generate_per_image    PTC 每张训练图生成张数
+#   --ftc_generate_per_image    FTC 每张训练图生成张数
+#   --test_json_path            独立测试集 JSON，可选
+# -----------------------------------------------------------------------------
+python new_code/run_tiger_model.py \
+    --json_path ./new_code/json/train_labels.json \
+    --test_json_path ./new_code/json/test_labels.json \
+    --base_dir /mnt/wangbd8/workspace/DataSets/ThyroidAgent/Classifaction_Data/Malignant_ultrasound_images_cropped \
+    --label_key FTCPTC \
+    --ignore_labels -1 \
+    --label_map 0:PTC:0,1:FTC:1 \
+    --output_root ./dataset_json \
+    --csv_prefix PTC_vs_FTC \
+    --train_ratio 0.9 \
+    --valid_ratio 0.1 \
+    --seed 42 \
+    --ptc_generate_per_image 0 \
+    --ftc_generate_per_image 4 \
+    --require_exists
+
+# -----------------------------------------------------------------------------
+# 步骤 3：训练 ResNet 二分类
+# 注意 imagepath 要对齐步骤2的 output_root（这里是 ./dataset_json）
+# -----------------------------------------------------------------------------
+python Resent/main_train.py \
+    --modelname Thyroid_PTC_vs_FTC_json \
+    --architecture resnet \
+    --imagepath ./dataset_json \
+    --train_data PTC_vs_FTC_train \
+    --valid_data PTC_vs_FTC_valid \
+    --test_data PTC_vs_FTC_test \
+    --learning_rate 0.0001 \
+    --batch_size 8 \
+    --num_epochs 50 \
+    --Class 2
+
+# -----------------------------------------------------------------------------
+# 步骤 4：JSON 版 test_model 评估
+# 参数说明：
+#   --test_json_path   测试集 JSON（格式同 train_labels.json）
+#   --valid_json_path  验证集 JSON（可选，用于自动找阈值）
+#   --image_base_path  图像根目录，真实路径 = image_base_path + filename
+# -----------------------------------------------------------------------------
+python new_code/test_model.py \
+    --pth_path ./modelsaved/train_20260207_212710/epoch_099_Thyroid_PTC_vs_FTC_with_augmentation_V0.985_T0.986.pth \
+    --test_json_path ./new_code/test_labels.json \
+    --valid_json_path ./new_code/valid_labels.json \
+    --image_base_path /mnt/wangbd8/workspace/DataSets/ThyroidAgent/Classifaction_Data \
+    --filename_key filename \
+    --label_key FTCPTC \
+    --ignore_labels -1 \
+    --label_map 0:0,1:1 \
+    --threshold_metric youden \
+    --batch_size 32 \
+    --num_workers 4 \
+    --bootstrap_samples 1000 \
+    --ci_level 0.95 \
+    --seed 42 \
+    --require_exists
+
+# -----------------------------------------------------------------------------
+# Windows 示例（把上面的 Linux 路径改成 Windows 路径）
+# -----------------------------------------------------------------------------
+# python new_code/run_tiger_model.py ^
+#     --json_path .\new_code\train_labels.json ^
+#     --test_json_path .\new_code\test_labels.json ^
+#     --base_dir D:\workspace\DataSets\ThyroidAgent\Classifaction_Data ^
+#     --output_root .\dataset_json ^
+#     --ptc_generate_per_image 1 ^
+#     --ftc_generate_per_image 3 ^
+#     --require_exists
+#
+# python Resent\main_train.py ^
+#     --modelname Thyroid_PTC_vs_FTC_json ^
+#     --architecture resnet ^
+#     --imagepath .\dataset_json ^
+#     --train_data PTC_vs_FTC_train ^
+#     --valid_data PTC_vs_FTC_valid ^
+#     --test_data PTC_vs_FTC_test ^
+#     --learning_rate 0.0001 ^
+#     --batch_size 8 ^
+#     --num_epochs 100 ^
+#     --Class 2
+#
+# python new_code/test_model.py ^
+#     --pth_path .\modelsaved\train_xxx\epoch_xxx.pth ^
+#     --test_json_path .\new_code\test_labels.json ^
+#     --valid_json_path .\new_code\valid_labels.json ^
+#     --image_base_path D:\workspace\DataSets\ThyroidAgent\Classifaction_Data ^
+#     --threshold_metric youden ^
+#     --bootstrap_samples 1000 ^
+#     --ci_level 0.95 ^
+#     --seed 42 ^
+#     --require_exists
+
+# -----------------------------------------------------------------------------
+# 常见排查
+# -----------------------------------------------------------------------------
+# 1) 报图像不存在：检查 filename 是否为相对路径，且能和 base_dir/image_base_path 拼接。
+# 2) 指标异常低：先确认 test_json 与训练数据没有泄露重叠。
+# 3) 标签反了：调整 --label_map（如 0:1,1:0）。
+# 4) JSON 有未标注：用 --ignore_labels 过滤（默认 -1）。

@@ -1,0 +1,48 @@
+# 2D Radiomics config for PNG/JPG + predicted 2D masks
+
+setting:
+  resampledPixelSpacing: null
+  interpolator: sitkBSpline
+  preCrop: false
+  normalize: false
+  removeOutliers: null
+  binWidth: 25
+  correctMask: true
+  label: 1
+  force2D: true
+  force2Ddimension: 0
+  symmetricalGLCM: true
+
+imageType:
+  Original: {}
+
+featureClass:
+  firstorder: []
+  glcm:
+    - Autocorrelation
+    - JointAverage
+    - ClusterProminence
+    - ClusterShade
+    - ClusterTendency
+    - Contrast
+    - Correlation
+    - DifferenceAverage
+    - DifferenceEntropy
+    - DifferenceVariance
+    - JointEnergy
+    - JointEntropy
+    - Imc1
+    - Imc2
+    - Idm
+    - Idmn
+    - Id
+    - Idn
+    - InverseVariance
+    - MaximumProbability
+    - SumEntropy
+    - SumSquares
+  glrlm: []
+  glszm: []
+  gldm: []
+  ngtdm: []
+  shape2D: []
