@@ -105,7 +105,7 @@ python Resent/main_train.py \
 #   --image_base_path  图像根目录，真实路径 = image_base_path + filename
 # -----------------------------------------------------------------------------
 python new_code/test_model.py \
-    --pth_path ./modelsaved/train_20260207_212710/epoch_099_Thyroid_PTC_vs_FTC_with_augmentation_V0.985_T0.986.pth \
+    --pth_path ./modelsaved/Thyroid_PTC_vs_FTC_json/epoch_021_Thyroid_PTC_vs_FTC_json_V0.630_T0.509.pth \
     --test_json_path /mnt/wangbd8/workspace/DataSets/ThyroidAgent/Classifaction_Data/Malignant_ultrasound_images_cropped/test_labels.json \
     --valid_json_path /mnt/wangbd8/workspace/DataSets/ThyroidAgent/Classifaction_Data/Malignant_ultrasound_images_cropped/test_labels.json \
     --image_base_path /mnt/wangbd8/workspace/DataSets/ThyroidAgent/Classifaction_Data/Malignant_ultrasound_images_cropped \
