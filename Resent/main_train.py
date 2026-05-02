@@ -31,8 +31,8 @@ def main(args):
             nn.Linear(features, args.Class))
 
 
-    if os.path.exists('./modelsaved/%s' % modelname) == False:  
-        os.makedirs('./modelsaved/%s' % modelname)
+    if os.path.exists('./modelsaved') == False:
+        os.makedirs('./modelsaved')
     if os.path.exists('./result/%s' % modelname) == False:  
         os.makedirs('./result/%s' % modelname)
 

@@ -55,9 +55,9 @@ def train_model(model, dataloaders, criterion, optimizer, num_epochs, modelname,
                 f.write(message + '\n')
                 f.flush()
     
-    # 设置默认保存目录
     if save_dir is None:
-        save_dir = f'./modelsaved/{modelname}'
+        timestamp = time.strftime('%Y%m%d_%H%M%S')
+        save_dir = f'./modelsaved/{modelname}_{timestamp}'
         os.makedirs(save_dir, exist_ok=True)
     for epoch in range(num_epochs):
         start = time.time()
