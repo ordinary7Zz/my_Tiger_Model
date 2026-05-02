@@ -67,8 +67,8 @@ python new_code/run_tiger_model.py \
 
 # 示例 B：使用类别平衡上限（按指定倍数下采样多数类）- 无需 Tiger 模型
 python new_code/run_tiger_model.py \
-    --json_path ./new_code/json/train_labels.json \
-    --test_json_path ./new_code/json/test_labels.json \
+    --json_path /mnt/wangbd8/workspace/DataSets/ThyroidAgent/Classifaction_Data/Malignant_ultrasound_images_cropped/train_labels.json \
+    --test_json_path /mnt/wangbd8/workspace/DataSets/ThyroidAgent/Classifaction_Data/Malignant_ultrasound_images_cropped/test_labels.json \
     --base_dir /mnt/wangbd8/workspace/DataSets/ThyroidAgent/Classifaction_Data/Malignant_ultrasound_images_cropped \
     --label_key FTCPTC \
     --ignore_labels -1 \
@@ -92,7 +92,7 @@ python Resent/main_train.py \
     --train_data PTC_vs_FTC_train \
     --valid_data PTC_vs_FTC_valid \
     --test_data PTC_vs_FTC_test \
-    --learning_rate 0.0001 \
+    --learning_rate 1e-5 \
     --batch_size 8 \
     --num_epochs 50 \
     --Class 2
