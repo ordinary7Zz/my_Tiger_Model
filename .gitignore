@@ -24,3 +24,8 @@ __pycache__/
 .DS_Store
 *.swp
 *.swo
+
+# 原代码
+Tiger-Model-master/
+
+*.zip

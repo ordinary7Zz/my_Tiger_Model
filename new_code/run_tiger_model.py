@@ -16,7 +16,7 @@ import random
 import shutil
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, Iterable, List, Sequence, Tuple
+from typing import Dict, Iterable, List, Optional, Sequence, Tuple
 
 import numpy as np
 import pandas as pd
@@ -35,6 +35,8 @@ class Sample:
     label: int
     subtype: str
     source_type: str = "original"
+    mask_path: Optional[Path] = None
+    condition_bg_path: Optional[Path] = None
 
 
 def parse_label_map(label_map_str: str) -> Dict[int, Tuple[str, int]]:
@@ -70,6 +72,19 @@ def read_json_records(json_path: Path) -> List[dict]:
     return data
 
 
+def resolve_existing_stem_path(root_dir: Optional[Path], rel_filename: str) -> Optional[Path]:
+    if root_dir is None:
+        return None
+    rel_path = Path(rel_filename)
+    stem = rel_path.stem
+    parent = root_dir / rel_path.parent
+    for suffix in IMAGE_SUFFIXES:
+        candidate = parent / f"{stem}{suffix}"
+        if candidate.exists():
+            return candidate.resolve()
+    return None
+
+
 def build_samples(
     records: Iterable[dict],
     base_dir: Path,
@@ -78,6 +93,8 @@ def build_samples(
     label_map: Dict[int, Tuple[str, int]],
     ignore_labels: Sequence[int],
     require_exists: bool,
+    mask_dir: Optional[Path] = None,
+    condition_bg_dir: Optional[Path] = None,
 ) -> Tuple[List[Sample], Dict[str, int]]:
     stats = {
         "total_records": 0,
@@ -123,6 +140,9 @@ def build_samples(
             stats["missing_file"] += 1
             continue
 
+        mask_path = resolve_existing_stem_path(mask_dir, rel_filename)
+        condition_bg_path = resolve_existing_stem_path(condition_bg_dir, rel_filename)
+
         subtype, out_label = label_map[raw_label_int]
         samples.append(
             Sample(
@@ -131,6 +151,8 @@ def build_samples(
                 raw_label=raw_label_int,
                 label=out_label,
                 subtype=subtype,
+                mask_path=mask_path,
+                condition_bg_path=condition_bg_path,
             )
         )
 
@@ -241,6 +263,18 @@ def resolve_multiplier_for_subtype(subtype: str, class_multipliers: Dict[str, in
     return max(0, int(class_multipliers.get(subtype_upper, 0)))
 
 
+def load_mask_image(mask_path: Optional[Path], image_size: Tuple[int, int]) -> Image.Image:
+    if mask_path is None or not mask_path.exists():
+        return build_center_mask(image_size)
+    return Image.open(mask_path).convert("L").resize(image_size, Image.Resampling.NEAREST)
+
+
+def load_condition_bg_image(condition_bg_path: Optional[Path], fallback_image: Image.Image, image_size: Tuple[int, int]) -> Image.Image:
+    if condition_bg_path is None or not condition_bg_path.exists():
+        return fallback_image
+    return Image.open(condition_bg_path).convert("RGB").resize(image_size, Image.Resampling.BILINEAR)
+
+
 def augment_train_with_tiger(
     train_samples: List[Sample],
     output_root: Path,
@@ -346,9 +380,10 @@ def augment_train_with_tiger(
         generated_success = 0
         for _ in range(needed_for_sample):
             seed_i = rng.randint(1, 10**9)
-            src_image = Image.open(sample.src_path).convert("RGB").resize((512, 512))
-            mask_image = build_center_mask((512, 512))
-            control_image = src_image
+            image_size = (512, 512)
+            src_image = Image.open(sample.src_path).convert("RGB").resize(image_size, Image.Resampling.BILINEAR)
+            mask_image = load_mask_image(sample.mask_path, image_size)
+            control_image = load_condition_bg_image(sample.condition_bg_path, src_image, image_size)
 
             try:
                 import torch
@@ -509,6 +544,8 @@ def build_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument("--valid_ratio", type=float, default=0.1)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--require_exists", action="store_true")
+    parser.add_argument("--mask_dir", type=str, default=None)
+    parser.add_argument("--condition_bg_dir", type=str, default=None)
 
     parser.add_argument("--ptc_generate_per_image", type=int, default=0)
     parser.add_argument("--ftc_generate_per_image", type=int, default=0)
@@ -539,6 +576,8 @@ def main() -> None:
     json_path = Path(args.json_path).resolve()
     base_dir = Path(args.base_dir).resolve()
     output_root = Path(args.output_root).resolve()
+    mask_dir = Path(args.mask_dir).resolve() if args.mask_dir else None
+    condition_bg_dir = Path(args.condition_bg_dir).resolve() if args.condition_bg_dir else None
     resnet_root = output_root / "Resnet_training_data"
 
     if not json_path.exists():
@@ -555,6 +594,8 @@ def main() -> None:
         label_map=label_map,
         ignore_labels=ignore_labels,
         require_exists=args.require_exists,
+        mask_dir=mask_dir,
+        condition_bg_dir=condition_bg_dir,
     )
     if len(samples) < 2:
         raise ValueError("有效样本数量不足，无法构建训练/验证集")
@@ -579,6 +620,8 @@ def main() -> None:
             label_map=label_map,
             ignore_labels=ignore_labels,
             require_exists=args.require_exists,
+            mask_dir=mask_dir,
+            condition_bg_dir=condition_bg_dir,
         )
         if len(test_samples) == 0:
             raise ValueError("测试集无有效样本，无法构建 test 集")
