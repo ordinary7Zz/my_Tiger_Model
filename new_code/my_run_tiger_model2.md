@@ -40,7 +40,7 @@
 python new_code/make_condition_bg.py \
     --json_path ./new_code/json/train_labels_small.json \
     --base_dir /mnt/wangbd8/workspace/DataSets/ThyroidAgent/Classifaction_Data/Malignant_ultrasound_images_cropped \
-    --mask_dir /mnt/wangbd8/workspace/DataSets/ThyroidAgent/Classifaction_Data/Malignant_ultrasound_masks \
+    --mask_dir /mnt/wangbd8/workspace/DataSets/ThyroidAgent/Classifaction_Data/Malignant_ultrasound_images_cropped_predictions \
     --output_dir ./dataset_json_debug/condition_BG \
     --filename_key filename \
     --size 512 \
