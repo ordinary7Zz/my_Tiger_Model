@@ -81,9 +81,16 @@ def resolve_existing_stem_path(root_dir: Optional[Path], rel_filename: str) -> O
     rel_path = Path(rel_filename)
     stem = rel_path.stem
     parent = root_dir / rel_path.parent
-    for suffix in IMAGE_SUFFIXES:
-        candidate = parent / f"{stem}{suffix}"
-        if candidate.exists():
+    if not parent.exists():
+        return None
+
+    stem_lower = stem.lower()
+    for candidate in parent.iterdir():
+        if not candidate.is_file():
+            continue
+        if candidate.suffix.lower() not in IMAGE_SUFFIXES:
+            continue
+        if candidate.stem.lower() == stem_lower:
             return candidate.resolve()
     return None
 
