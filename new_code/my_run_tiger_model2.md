@@ -54,9 +54,9 @@ python new_code/make_condition_bg.py \
 
 ```bash
 python new_code/make_condition_bg.py \
-    --json_path ./new_code/json/train_labels.json \
+    --json_path /mnt/wangbd8/workspace/DataSets/ThyroidAgent/Classifaction_Data/Malignant_ultrasound_images_cropped/train_labels.json \
     --base_dir /mnt/wangbd8/workspace/DataSets/ThyroidAgent/Classifaction_Data/Malignant_ultrasound_images_cropped \
-    --mask_dir /mnt/wangbd8/workspace/DataSets/ThyroidAgent/Classifaction_Data/Malignant_ultrasound_masks \
+    --mask_dir /mnt/wangbd8/workspace/DataSets/ThyroidAgent/Classifaction_Data/Malignant_ultrasound_images_cropped_predictions \
     --output_dir ./dataset_json/condition_BG \
     --filename_key filename \
     --size 512 \
@@ -146,8 +146,8 @@ python new_code/run_tiger_model2.py \
 python new_code/run_tiger_model2.py \
     --json_path ./new_code/json/train_labels.json \
     --test_json_path ./new_code/json/test_labels.json \
-    --base_dir /mnt/wangbd8/workspace/DataSets/ThyroidAgent/Classifaction_Data/Malignant_ultrasound_images_cropped \
-    --mask_dir /mnt/wangbd8/workspace/DataSets/ThyroidAgent/Classifaction_Data/Malignant_ultrasound_masks \
+    --base_dir /mnt/wangbd8/workspace/DataSets/ThyroidAgent/Classifaction_Data/FangDai_Thyroid_Ultrasound_Images_cropped \
+    --mask_dir /mnt/wangbd8/workspace/DataSets/ThyroidAgent/Classifaction_Data/FangDai_Thyroid_Ultrasound_Images_cropped_predictions \
     --condition_bg_dir ./dataset_json/condition_BG \
     --output_root ./dataset_json_v2_two_stage \
     --csv_prefix PTC_vs_FTC \
@@ -155,7 +155,7 @@ python new_code/run_tiger_model2.py \
     --valid_ratio 0.1 \
     --seed 42 \
     --ptc_generate_per_image 0 \
-    --ftc_generate_per_image 4 \
+    --ftc_generate_per_image 0 \
     --pretrain_model_path ./model/pretrain \
     --controlnet_bg_path ./model/fine-train-model/controlnet_bg \
     --use_two_stage_generation \
