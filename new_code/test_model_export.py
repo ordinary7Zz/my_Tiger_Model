@@ -455,6 +455,7 @@ def main():
     parser.add_argument("--bootstrap_samples", type=int, default=1000, help="bootstrap 重采样次数")
     parser.add_argument("--ci_level", type=float, default=0.95, help="置信区间置信水平")
     parser.add_argument("--seed", type=int, default=42, help="随机种子")
+    parser.add_argument("--output_dir", type=str, default=None, help="输出目录（可选）")
 
     args = parser.parse_args()
 
@@ -577,8 +578,10 @@ def main():
     )
 
     test_json_stem = Path(args.test_json_path).stem
-    out_txt = Path(args.test_json_path).with_name(f"{test_json_stem}_metrics.txt")
-    out_json = Path(args.test_json_path).with_name(f"{test_json_stem}_predictions.json")
+    output_dir = Path(args.output_dir).resolve() if args.output_dir else Path(args.test_json_path).resolve().parent
+    output_dir.mkdir(parents=True, exist_ok=True)
+    out_txt = output_dir / f"{test_json_stem}_metrics.txt"
+    out_json = output_dir / f"{test_json_stem}_predictions.json"
 
     txt_content = format_metrics_txt(
         args=args,

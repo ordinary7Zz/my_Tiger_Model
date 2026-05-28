@@ -196,9 +196,9 @@ python new_code/test_model.py \
 
 ```bash
 python new_code/test_model_export.py \
-    --pth_path ./modelsaved/Thyroid_PTC_vs_FTC_json/epoch_021_Thyroid_PTC_vs_FTC_json_V0.630_T0.509.pth \
-    --test_json_path /mnt/wangbd8/workspace/DataSets/ThyroidAgent/Classifaction_Data/Malignant_ultrasound_images_cropped/test_labels.json \
-    --valid_json_path /mnt/wangbd8/workspace/DataSets/ThyroidAgent/Classifaction_Data/Malignant_ultrasound_images_cropped/test_labels.json \
+    --pth_path ./modelsaved/Thyroid_PTC_vs_FTC_json_20260517_144828/e33_Thyroid_PTC_vs_FTC_json_V0.721T0.665_best.pth \
+    --test_json_path /mnt/wangbd8/workspace/DataSets/ThyroidAgent/Classifaction_Data/Malignant_ultrasound_images_cropped/test_labels_filtered_by_csv.json \
+    --valid_json_path /mnt/wangbd8/workspace/DataSets/ThyroidAgent/Classifaction_Data/Malignant_ultrasound_images_cropped/test_labels_filtered_by_csv.json \
     --image_base_path /mnt/wangbd8/workspace/DataSets/ThyroidAgent/Classifaction_Data/Malignant_ultrasound_images_cropped \
     --filename_key filename \
     --label_key FTCPTC \
@@ -210,10 +210,11 @@ python new_code/test_model_export.py \
     --bootstrap_samples 1000 \
     --ci_level 0.95 \
     --seed 42 \
-    --require_exists
+    --require_exists \
+    --output_dir ./export_results
 ```
 
-输出文件会保存在 `--test_json_path` 同目录下：
+输出文件会保存在 `--output_dir` 下；如果不传这个参数，则默认保存在 `--test_json_path` 同目录下：
 
 - `test_labels_metrics.txt`
 - `test_labels_predictions.json`
