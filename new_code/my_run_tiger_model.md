@@ -112,7 +112,7 @@ python new_code/run_tiger_model.py \
 python new_code/run_tiger_model.py \
     --json_path ./new_code/json/train_labels.json \
     --test_json_path ./new_code/json/test_labels.json \
-    --base_dir /mnt/wangbd8/workspace/DataSets/ThyroidAgent/Classifaction_Data/Malignant_ultrasound_images_cropped \
+    --base_dir /mnt/wangbd8/workspace/DataSets/ThyroidAgent/Classifaction_Data/FangDai_Thyroid_Ultrasound_Images_cropped \
     --label_key FTCPTC \
     --ignore_labels -1 \
     --label_map 0:PTC:0,1:FTC:1 \
@@ -122,7 +122,7 @@ python new_code/run_tiger_model.py \
     --valid_ratio 0.1 \
     --seed 42 \
     --ptc_generate_per_image 0 \
-    --ftc_generate_per_image 4 \
+    --ftc_generate_per_image 0 \
     --pretrain_model_path ./model/pretrain \
     --controlnet_bg_path ./model/fine-train-model/controlnet_bg \
     --require_exists
@@ -191,6 +191,32 @@ python new_code/test_model.py \
     --seed 42 \
     --require_exists
 ```
+
+### 新版：同时导出 txt + json
+
+```bash
+python new_code/test_model_export.py \
+    --pth_path ./modelsaved/Thyroid_PTC_vs_FTC_json/epoch_021_Thyroid_PTC_vs_FTC_json_V0.630_T0.509.pth \
+    --test_json_path /mnt/wangbd8/workspace/DataSets/ThyroidAgent/Classifaction_Data/Malignant_ultrasound_images_cropped/test_labels.json \
+    --valid_json_path /mnt/wangbd8/workspace/DataSets/ThyroidAgent/Classifaction_Data/Malignant_ultrasound_images_cropped/test_labels.json \
+    --image_base_path /mnt/wangbd8/workspace/DataSets/ThyroidAgent/Classifaction_Data/Malignant_ultrasound_images_cropped \
+    --filename_key filename \
+    --label_key FTCPTC \
+    --ignore_labels -1 \
+    --label_map 0:0,1:1 \
+    --threshold_metric youden \
+    --batch_size 8 \
+    --num_workers 4 \
+    --bootstrap_samples 1000 \
+    --ci_level 0.95 \
+    --seed 42 \
+    --require_exists
+```
+
+输出文件会保存在 `--test_json_path` 同目录下：
+
+- `test_labels_metrics.txt`
+- `test_labels_predictions.json`
 
 ---
 
