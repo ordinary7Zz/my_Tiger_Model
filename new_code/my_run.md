@@ -87,9 +87,9 @@ python new_code/make_condition_bg.py \
 
 ```bash
 python new_code/make_condition_bg.py \
-    --json_path ./new_code/json/train_labels.json \
+    --json_path /mnt/wangbd8/workspace/ThyroidAgent/dino_unet_multitask/my_json/train_labels_filtered_by_csv.json \
     --base_dir /mnt/wangbd8/workspace/DataSets/ThyroidAgent/Classifaction_Data/Malignant_ultrasound_images_cropped \
-    --mask_dir /mnt/wangbd8/workspace/DataSets/ThyroidAgent/Classifaction_Data/Malignant_ultrasound_masks \
+    --mask_dir /mnt/wangbd8/workspace/DataSets/ThyroidAgent/Classifaction_Data/Malignant_ultrasound_images_predictions \
     --output_dir ./dataset_json/condition_BG \
     --filename_key filename \
     --size 512 \
@@ -142,9 +142,9 @@ python Resent/main_train.py \
 
 ```bash
 python new_code/test_model.py \
-    --pth_path ./modelsaved/Thyroid_PTC_vs_FTC_json/epoch_021_Thyroid_PTC_vs_FTC_json_V0.630_T0.509.pth \
-    --test_json_path /mnt/wangbd8/workspace/DataSets/ThyroidAgent/Classifaction_Data/Malignant_ultrasound_images_cropped/test_labels.json \
-    --valid_json_path /mnt/wangbd8/workspace/DataSets/ThyroidAgent/Classifaction_Data/Malignant_ultrasound_images_cropped/test_labels.json \
+    --pth_path ./modelsaved/Thyroid_PTC_vs_FTC_json_20260517_144828/epoch_013_Thyroid_PTC_vs_FTC_json_V0.623_T0.714.pth \
+    --test_json_path /mnt/wangbd8/workspace/ThyroidAgent/dino_unet_multitask/my_json/test_labels_filtered_by_csv.json \
+    --valid_json_path /mnt/wangbd8/workspace/ThyroidAgent/dino_unet_multitask/my_json/test_labels_filtered_by_csv.json \
     --image_base_path /mnt/wangbd8/workspace/DataSets/ThyroidAgent/Classifaction_Data/Malignant_ultrasound_images_cropped \
     --filename_key filename \
     --label_key FTCPTC \

@@ -40,7 +40,7 @@
 python new_code/make_condition_bg.py \
     --json_path ./new_code/json/train_labels_small.json \
     --base_dir /mnt/wangbd8/workspace/DataSets/ThyroidAgent/Classifaction_Data/Malignant_ultrasound_images_cropped \
-    --mask_dir /mnt/wangbd8/workspace/DataSets/ThyroidAgent/Classifaction_Data/Malignant_ultrasound_masks \
+    --mask_dir /mnt/wangbd8/workspace/DataSets/ThyroidAgent/Classifaction_Data/Malignant_ultrasound_images_cropped_predictionns \
     --output_dir ./dataset_json_debug/condition_BG \
     --filename_key filename \
     --size 512 \
@@ -54,9 +54,9 @@ python new_code/make_condition_bg.py \
 
 ```bash
 python new_code/make_condition_bg.py \
-    --json_path ./new_code/json/train_labels.json \
+    --json_path /mnt/wangbd8/workspace/ThyroidAgent/dino_unet_multitask/my_json/train_labels_filtered_by_csv.json \
     --base_dir /mnt/wangbd8/workspace/DataSets/ThyroidAgent/Classifaction_Data/Malignant_ultrasound_images_cropped \
-    --mask_dir /mnt/wangbd8/workspace/DataSets/ThyroidAgent/Classifaction_Data/Malignant_ultrasound_masks \
+    --mask_dir /mnt/wangbd8/workspace/DataSets/ThyroidAgent/Classifaction_Data/Malignant_ultrasound_images_cropped_predictionns \
     --output_dir ./dataset_json/condition_BG \
     --filename_key filename \
     --size 512 \
@@ -134,8 +134,8 @@ python new_code/run_tiger_model.py \
 
 ```bash
 python new_code/run_tiger_model.py \
-    --json_path ./new_code/json/train_labels.json \
-    --test_json_path ./new_code/json/test_labels.json \
+    --json_path /mnt/wangbd8/workspace/ThyroidAgent/dino_unet_multitask/my_json/train_labels_filtered_by_csv.json \
+    --test_json_path /mnt/wangbd8/workspace/ThyroidAgent/dino_unet_multitask/my_json/test_labels_filtered_by_csv.json \
     --base_dir /mnt/wangbd8/workspace/DataSets/ThyroidAgent/Classifaction_Data/Malignant_ultrasound_images_cropped \
     --label_key FTCPTC \
     --ignore_labels -1 \
